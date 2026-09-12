@@ -225,7 +225,7 @@ class NovaCarterTICVLA(BehaviorScript):
         self._last_log_frame = 0
         # Get run_id from environment for unique log paths (multi-instance support)
         self._run_id = os.getenv('BENCHMARK_RUN_ID', 'default')
-        self._log_directory = f"./logs/{self._run_id}/carter_ticvla_data"
+        self._log_directory = f"./logs/{self._run_id}/carter_ticvla_data_{os.getpid()}"
         self._frame_count = 0
         self._create_log_directory()
         
@@ -364,7 +364,7 @@ class NovaCarterTICVLA(BehaviorScript):
             for img_path in self._image_history:
                 if os.path.exists(img_path):
                     try:
-                        os.remove(img_path)
+                        pass
                     except Exception as e:
                         carb.log_warn(f"Failed to remove image {img_path}: {e}")
             self._image_history.clear()
@@ -771,7 +771,7 @@ class NovaCarterTICVLA(BehaviorScript):
                         oldest = self._image_history.pop(0)
                         if os.path.exists(oldest):
                             try:
-                                os.remove(oldest)
+                                pass
                             except Exception as e:
                                 carb.log_warn(f"Failed to remove old image {oldest}: {e}")
 
@@ -1168,7 +1168,7 @@ class NovaCarterTICVLA(BehaviorScript):
                 for img_path in self._image_history:
                     if os.path.exists(img_path):
                         try:
-                            os.remove(img_path)
+                            pass
                             removed_count += 1
                         except Exception as e:
                             carb.log_warn(f"Failed to remove image {img_path}: {e}")

@@ -1,0 +1,13 @@
+seed: 36
+navigation_method: ticvla
+success_threshold: 1.5
+
+episode_office_spot_test:
+  scene: "${TICVLA_DYNANAV_ROOT}/assets/office.usd"
+  start: [-10.6, -12.1, 0.01]
+  start_yaw: 90.0
+  goal: [-7.68, -25.53, 0.01]
+  instruction: "Go straight ahead through the hallway, then turn left at the end to approach the red emergency exit door."
+  timeout: 85
+  num_people: 0
+  robot_type: "spot"

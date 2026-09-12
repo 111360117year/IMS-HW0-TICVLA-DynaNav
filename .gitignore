@@ -44,3 +44,7 @@ checkpoints/
 _isaac_sim*/
 _build/
 _repo/
+DynaNav/logs
+DynaNav/logs_old_nfs/
+*.bak
+*.bak2

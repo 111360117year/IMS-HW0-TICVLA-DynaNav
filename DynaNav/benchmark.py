@@ -26,8 +26,8 @@ import subprocess
 from pathlib import Path
 from generate_commands import *
 
-# APP_CONFIG = {"renderer": "RayTracedLighting", "headless": True, "width": 640, "height": 480}
-APP_CONFIG = {"renderer": "RayTracedLighting", "headless": False, "width": 640, "height": 480}
+APP_CONFIG = {"renderer": "RayTracedLighting", "headless": True, "multi_gpu": False, "width": 640, "height": 480}
+# APP_CONFIG = {"renderer": "RayTracedLighting", "headless": False, "width": 640, "height": 480}
 
 # Prefer writing outputs relative to this script (not cwd), since Isaac Sim subprocesses
 # may be launched from different working directories.

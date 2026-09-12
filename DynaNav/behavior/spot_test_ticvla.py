@@ -216,7 +216,7 @@ class SpotTICVLA(BehaviorScript):
         self._last_log_frame = 0
         # Get run_id from environment for unique log paths (multi-instance support)
         self._run_id = os.getenv('BENCHMARK_RUN_ID', 'default')
-        self._log_directory = f"./logs/{self._run_id}/spot_ticvla_data"
+        self._log_directory = f"./logs/{self._run_id}/spot_ticvla_data_{os.getpid()}"
         self._frame_count = 0
         self._create_log_directory()
         
@@ -355,7 +355,7 @@ class SpotTICVLA(BehaviorScript):
                 for img_path in self._image_history:
                     try:
                         if os.path.exists(img_path):
-                            os.remove(img_path)
+                            pass
                     except Exception as e:
                         carb.log_warn(f"Failed to remove image {img_path}: {e}")
             except Exception as e:
@@ -955,7 +955,7 @@ class SpotTICVLA(BehaviorScript):
                         oldest = self._image_history.pop(0)
                         try:
                             if os.path.exists(oldest):
-                                os.remove(oldest)
+                                pass
                         except Exception as e:
                             carb.log_warn(f"Failed to remove old image {oldest}: {e}")
 
@@ -1304,7 +1304,7 @@ class SpotTICVLA(BehaviorScript):
                 for img_path in self._image_history:
                     try:
                         if os.path.exists(img_path):
-                            os.remove(img_path)
+                            pass
                             removed_count += 1
                     except Exception as e:
                         carb.log_warn(f"Failed to remove image {img_path}: {e}")

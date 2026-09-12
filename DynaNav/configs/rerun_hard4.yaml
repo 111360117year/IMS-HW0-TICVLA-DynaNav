@@ -1,0 +1,45 @@
+seed: 36
+navigation_method: ticvla
+success_threshold: 1.5
+
+episode_outdoor_carter:
+  scene: "${TICVLA_DYNANAV_ROOT}/assets/outdoor_small.usd"
+  start: [-34.0, 150.6, 6.25]
+  start_yaw: 80
+  goal: [-24.02, 173.3, 6.3]
+  instruction: "Cross the street straight ahead, then proceed forward to the Northside Branch Library with the circular window at front. Do not turn right."
+  timeout: 200
+  num_people: 100
+  robot_type: "nova_carter"
+  success_threshold: 4
+
+episode_warehouse_carter:
+  scene: "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.0/Isaac/Environments/Simple_Warehouse/full_warehouse.usd"
+  start: [-10.22, -7.36, 0.01]
+  start_yaw: 90
+  goal: [-3.26, 7.61, 0.01]
+  instruction: "Proceed to the yellow forklift at the entrance of Aisle 06 (the first aisle from the right)."
+  timeout: 90
+  num_people: 20
+  robot_type: "nova_carter"
+
+episode_outdoor_spot:
+  scene: "${TICVLA_DYNANAV_ROOT}/assets/outdoor_small.usd"
+  start: [-34.0, 150.6, 6.25]
+  start_yaw: 80
+  goal: [-24.02, 173.3, 6.3]
+  instruction: "Cross the street straight ahead, then proceed forward to the Northside Branch Library with the circular window at front. Do not turn right."
+  timeout: 250
+  num_people: 100
+  robot_type: "spot"
+  success_threshold: 4
+
+episode_warehouse_spot:
+  scene: "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.0/Isaac/Environments/Simple_Warehouse/full_warehouse.usd"
+  start: [-10.22, -7.36, 0.01]
+  start_yaw: 90
+  goal: [-3.26, 7.61, 0.01]
+  instruction: "Proceed to the yellow forklift at the entrance of Aisle 06 (the first aisle from the right)."
+  timeout: 110
+  num_people: 20
+  robot_type: "spot"
