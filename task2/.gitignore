@@ -1,0 +1,12 @@
+# Never commit large artifacts (dataset, checkpoints, videos) - see README
+outputs/
+checkpoints/
+videos/
+*.mp4
+*.safetensors
+*.pt
+*.pth
+hf_cache/
+__pycache__/
+*.pyc
+.libero/

@@ -1,7 +1,7 @@
 outputs/
 checkpoints/
-*.safetensors
-*.pt
-*.pth
+videos/
 *.mp4
+*.safetensors
 __pycache__/
+.git/
