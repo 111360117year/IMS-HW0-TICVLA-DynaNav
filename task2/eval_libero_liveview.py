@@ -75,6 +75,11 @@ class LiveViewConfig:
 @dataclass
 class LiveEvalConfig(EvalPipelineConfig):
     liveview: LiveViewConfig = field(default_factory=LiveViewConfig)
+    # LeRobot's LiberoProcessorStep rotates only the front camera by 180 degrees. In the lerobot/libero
+    # training data the wrist camera is stored rotated as well (gripper fingers at the bottom of the
+    # frame), while the simulator returns it un-rotated (fingers at the top). Rotate the wrist image at
+    # evaluation time so the policy sees the same orientation it was trained on.
+    flip_wrist_image: bool = True
 
 
 # --------------------------------------------------------------------------------------
@@ -312,6 +317,9 @@ class LiveView:
 # --------------------------------------------------------------------------------------
 
 
+WRIST_KEY = "observation.images.image2"
+
+
 def _get_images(observation: dict) -> tuple[np.ndarray, np.ndarray]:
     pixels = observation["pixels"]
     return np.asarray(pixels["image"][0]), np.asarray(pixels["image2"][0])
@@ -328,6 +336,7 @@ def run_episode(
     max_steps: int,
     view: LiveView,
     view_kwargs: dict,
+    flip_wrist_image: bool = True,
 ) -> dict:
     """Run one episode on a 1-env SyncVectorEnv. Mirrors `lerobot.scripts.lerobot_eval.rollout`."""
     policy.reset()
@@ -342,6 +351,8 @@ def run_episode(
         obs = preprocess_observation(observation)
         obs = add_envs_task(env, obs)
         obs = env_pre(obs)
+        if flip_wrist_image and WRIST_KEY in obs:
+            obs[WRIST_KEY] = torch.flip(obs[WRIST_KEY], dims=[2, 3])  # (B, C, H, W): rotate 180 degrees
         obs = pre(obs)
         with torch.inference_mode():
             action = policy.select_action(obs)
@@ -424,7 +435,10 @@ def evaluate(cfg: LiveEvalConfig, envs, policy, env_pre, env_post, pre, post, vi
                 total_planned=total_planned,
             )
             t0 = time.time()
-            res = run_episode(venv, policy, env_pre, env_post, pre, post, seed, max_steps, view, view_kwargs)
+            res = run_episode(
+                venv, policy, env_pre, env_post, pre, post, seed, max_steps, view, view_kwargs,
+                flip_wrist_image=cfg.flip_wrist_image,
+            )
             final_path = tmp_path.with_name(tmp_path.stem + ("_SUCCESS" if res["success"] else "_FAIL") + ".mp4")
             vpath = view.finish_episode_recording(final_path)
 
@@ -501,6 +515,7 @@ def _write_info(path: Path, cfg, per_task_infos, group_acc, overall, start_t, co
             "n_episodes_per_task": cfg.eval.n_episodes,
             "seed": cfg.seed,
             "observation_size": [cfg.env.observation_height, cfg.env.observation_width],
+            "flip_wrist_image": cfg.flip_wrist_image,
         },
     }
     path.parent.mkdir(parents=True, exist_ok=True)
