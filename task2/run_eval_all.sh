@@ -25,7 +25,7 @@ IFS=',' read -r -a GPU_ARR <<< "$GPUS"
 mkdir -p "$OUT"
 
 run_suite() {  # suite gpu port
-  CUDA_VISIBLE_DEVICES="$2" python "$HERE/eval_libero_liveview.py" \
+  CUDA_VISIBLE_DEVICES="$2" python -u "$HERE/eval_libero_liveview.py" \
     --policy.path="$CKPT" \
     --policy.n_action_steps=1 \
     --env.type=libero --env.task="$1" \
