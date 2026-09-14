@@ -5,7 +5,7 @@
 # Usage:
 #   ./run_eval_all.sh <pretrained_model_dir> <output_dir> [gpu_list]
 #
-#   env vars  N_EPISODES (default 10), N_ACTION_STEPS (default 10), PORT_BASE (default 8765)
+#   env vars  N_EPISODES (default 10), N_ACTION_STEPS (default 10), SEED (default 1000), PORT_BASE (default 8765)
 #   gpu_list  comma-separated GPU ids. One id  -> the four suites run one after another on that GPU.
 #             Four ids -> each suite runs on its own GPU in parallel (about 2.5 h instead of 5 h).
 #
@@ -19,6 +19,7 @@ OUT=${2:?output dir}
 GPUS=${3:-0}
 N_EPISODES=${N_EPISODES:-10}
 N_ACTION_STEPS=${N_ACTION_STEPS:-10}   # actions executed per policy call (paper: 1 or 10 for LIBERO)
+SEED=${SEED:-1000}                     # evaluation seed (LeRobot default 1000)
 PORT_BASE=${PORT_BASE:-8765}
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -33,6 +34,7 @@ run_suite() {  # suite gpu port
     --env.type=libero --env.task="$1" \
     --env.observation_height=256 --env.observation_width=256 \
     --eval.n_episodes="$N_EPISODES" --eval.batch_size=1 \
+    --seed="$SEED" \
     --output_dir="$OUT/$1" \
     --liveview.port="$3" \
     > "$OUT/$1.log" 2>&1
