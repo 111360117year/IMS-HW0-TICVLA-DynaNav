@@ -246,4 +246,4 @@ IMS-HW0-TICVLA-DynaNav/
 - [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) — 模擬平台
 - NTUST GIMT「Intelligent Manufacturing Systems」（Fall 2026, Prof. Sin-Ye Jhong）— 課程作業框架
 
-**作者**：【學號待填】（[@111360117year](https://github.com/111360117year)）
+**作者**：M11502135 顧弘年（[@111360117year](https://github.com/111360117year)）
