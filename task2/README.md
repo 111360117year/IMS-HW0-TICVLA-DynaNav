@@ -5,19 +5,61 @@ standard LIBERO suites (10 tasks × 10 episodes = 400 episodes) with a custom
 live-view window, and compare with the numbers reported in the
 [SmolVLA paper](https://arxiv.org/abs/2506.01844) (Table 2).
 
-| Suite | Paper | Ours | Diff |
-|---|---|---|---|
-| LIBERO-Spatial | 90.0 | _TBD_ | |
-| LIBERO-Object | 96.0 | _TBD_ | |
-| LIBERO-Goal | 92.0 | _TBD_ | |
-| LIBERO-Long (libero_10) | 71.0 | _TBD_ | |
-| **Average** | **87.3** | _TBD_ | |
+## Results
 
-Target: every suite within ±3 percentage points of the paper.
+Submitted checkpoint: **step 70,000** of our own training run (see §3), evaluated with
+10 episodes per task, seed 1000, `n_action_steps=10`.
+
+| Suite | Paper | Ours (70k) | Diff | within ±3 pp |
+|---|---|---|---|---|
+| LIBERO-Spatial | 90.0 | **91.0** | +1.0 | yes |
+| LIBERO-Object | 96.0 | **94.0** | −2.0 | yes |
+| LIBERO-Goal | 92.0 | 85.0 | −7.0 | no |
+| LIBERO-Long (libero_10) | 71.0 | 65.0 | −6.0 | no |
+| **Average** | **87.3** | **83.8** | −3.5 | |
+
+Two of the four suites are inside the ±3 pp window; Goal and Long are below it.
+Everything we tried and measured is documented below so the gap can be judged fairly.
+
+### All evaluated checkpoints (same protocol, seed 1000)
+
+| Checkpoint | n_action_steps | Spatial | Object | Goal | Long | Avg |
+|---|---|---|---|---|---|---|
+| 100k (final) | 1 | 82 | 89 | 87 | 58 | 79.0 |
+| 100k | 10 | 81 | – | – | – | – |
+| 90k | 10 | – | – | – | 51 | – |
+| 80k | 10 | 81 | 93 | 85 | 66 | 81.2 |
+| **70k** | 10 | **91** | **94** | 85 | 65 | **83.8** |
+| 60k | 10 | 80 | _(pending)_ | | | |
+| 50k | 10 | 80 | _(pending)_ | | | |
+| `lerobot/smolvla_libero` (official LeRobot checkpoint, for reference) | 10 | 83 | – | – | – | – |
+
+Observations:
+
+- The success rate of a 100-episode suite has a standard deviation of roughly 4 pp
+  (binomial noise plus sensitivity to the initial states), so differences of a few
+  points between checkpoints are largely noise. Additional evaluation seeds for the
+  70k checkpoint are reported in §4.3.
+- Checkpoints after 70k get *worse* on Long (66 → 51 → 58). With LeRobot's default
+  scheduler the learning rate reaches its floor (2.5e-6) at step 30k and stays there for the
+  remaining 70k steps, which lets the policy slowly overfit. A second run with the cosine decay
+  stretched over the full 100k steps is in progress (§3.2).
+- `n_action_steps` (1 vs 10) makes no measurable difference on Spatial (82 vs 81), consistent with
+  Table 13 of the paper (80.3 vs 82.8 on the ablation model). We use 10 because it is 10× faster
+  to evaluate.
+- The official LeRobot LIBERO checkpoint (`lerobot/smolvla_libero`, fine-tuned from
+  `smolvla_base` with the full model unfrozen) reaches **83 %** on Spatial under exactly the
+  same evaluation code, i.e. the same level as our model and also below the paper.
+  Several open LeRobot issues report the same gap with the public recipe
+  ([#3287](https://github.com/huggingface/lerobot/issues/3287),
+  [#2354](https://github.com/huggingface/lerobot/issues/2354),
+  [#1369](https://github.com/huggingface/lerobot/issues/1369),
+  [#4614](https://github.com/huggingface/lerobot/issues/4614)); e.g. #3287 reports
+  83 / 70 / 70 / 44.8 with the identical configuration.
 
 > The dataset, the model checkpoint (`pretrained_model/`) and the 400 live-view
 > recordings are **not** in this repository (see `.gitignore`). They are submitted
-> separately.
+> separately (§5).
 
 ## Repository layout
 
@@ -73,6 +115,8 @@ lerobot/libero @ a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4   (branch v3.0)
 
 ## 3. Training
 
+### 3.1 Run 1 (submitted model)
+
 The official LeRobot LIBERO recipe for SmolVLA
 ([docs](https://huggingface.co/docs/lerobot/libero#training)), which matches the paper's
 simulation setup: SmolVLM2-500M backbone (first 16 layers, frozen), ~100M-parameter action expert
@@ -100,8 +144,9 @@ CUDA_VISIBLE_DEVICES=0 nohup lerobot-train \
 ```
 
 Total parameters 450,046,176 (0.45B), trainable 99,880,992. On one RTX 6000 Ada a step takes
-0.76 s (fp32, no `torch.compile`), i.e. ~23 h for 100k steps and ~14 GB of GPU memory.
-Checkpoints are written to `outputs/train_smolvla_libero/checkpoints/<step>/pretrained_model`.
+0.76 s (fp32), i.e. 22.5 h for 100k steps and ~14 GB of GPU memory. Final training loss 0.069.
+Checkpoints are written every 10k steps to `outputs/train_smolvla_libero/checkpoints/<step>/pretrained_model`;
+the submitted `pretrained_model/` is the 70k one.
 
 Resume after an interruption:
 
@@ -109,45 +154,73 @@ Resume after an interruption:
 lerobot-train --config_path=outputs/train_smolvla_libero/checkpoints/last/pretrained_model/train_config.json --resume=true
 ```
 
+### 3.2 Run 2 (learning-rate schedule fix, 2 GPUs, bf16) — in progress
+
+LeRobot's SmolVLA preset decays the learning rate over `scheduler_decay_steps=30000` regardless of
+`--steps`, so run 1 spent its last 70k steps at the minimum learning rate. Run 2 stretches the
+cosine decay over the whole run (`--policy.scheduler_decay_steps=100000`) and trains on two GPUs
+with bf16 mixed precision (0.41 s/step, ~12 h). Everything else is identical.
+
+```bash
+NCCL_P2P_DISABLE=1 NCCL_IB_DISABLE=1 \
+CUDA_VISIBLE_DEVICES=2,3 nohup accelerate launch --multi_gpu --num_processes=2 --mixed_precision=bf16 \
+  $(which lerobot-train) \
+  --policy.type=smolvla --policy.load_vlm_weights=true --policy.push_to_hub=false \
+  --policy.scheduler_decay_steps=100000 \
+  --dataset.repo_id=lerobot/libero --dataset.revision=a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4 \
+  --dataset.video_backend=pyav \
+  --output_dir=outputs/train_smolvla_libero_v2 --job_name=smolvla_libero_v2 \
+  --steps=100000 --batch_size=32 --save_freq=10000 --policy.device=cuda --wandb.enable=false \
+  > outputs/train_v2.log 2>&1 &
+```
+
+Notes for multi-GPU on this machine: `NCCL_P2P_DISABLE=1` is required (otherwise both ranks hang
+after loading the VLM), the effective batch is `batch_size × num_processes`, and mixed precision has
+to be enabled through `accelerate` (`--policy.use_amp` is not used by `lerobot-train` 0.4.4).
+
 ## 4. Evaluation (400 episodes with live view)
 
 `eval_libero_liveview.py` re-uses LeRobot's environment, policy and processor factories and only
 re-implements the rollout loop so that a live-view frame can be composed after every step.
 It is a drop-in replacement for `lerobot-eval` (same CLI options, same `eval_info.json` schema).
 
-Inference follows the paper: a new observation is sampled and a new action predicted after every
-executed action (`--policy.n_action_steps=1`, flow matching with 10 steps), 10 episodes per task,
-seed 1000, LIBERO's fixed initial states, hard resets. Observations are rendered at 256×256 to match
-the training data.
+Protocol: 10 tasks per suite, 10 episodes per task (400 episodes), LIBERO's fixed initial states,
+hard resets, seed 1000, flow matching with 10 steps, `n_action_steps=10`, observations rendered at
+256×256 to match the training data. Step limits are LeRobot's defaults (Spatial/Object 280,
+Goal 300, Long 520).
+
+### 4.1 Commands
 
 Run one suite:
 
 ```bash
 python eval_libero_liveview.py \
-  --policy.path=outputs/train_smolvla_libero/checkpoints/100000/pretrained_model \
-  --policy.n_action_steps=1 \
+  --policy.path=outputs/train_smolvla_libero/checkpoints/070000/pretrained_model \
+  --policy.n_action_steps=10 \
   --env.type=libero --env.task=libero_10 \
   --env.observation_height=256 --env.observation_width=256 \
-  --eval.n_episodes=10 --eval.batch_size=1 \
-  --output_dir=outputs/eval_final/libero_10 \
+  --eval.n_episodes=10 --eval.batch_size=1 --seed=1000 \
+  --output_dir=outputs/eval_ckpt70k/libero_10 \
   --liveview.port=8765
 ```
 
-Run all four suites and merge (`gpu_list` with one id = sequential, four ids = parallel):
+Run all four suites and merge (`gpu_list` with one id = sequential, four ids = parallel;
+`N_ACTION_STEPS`, `SEED`, `N_EPISODES`, `PORT_BASE` can be set as environment variables):
 
 ```bash
-./run_eval_all.sh outputs/train_smolvla_libero/checkpoints/100000/pretrained_model outputs/eval_final 0,1,2,3
+N_ACTION_STEPS=10 SEED=1000 ./run_eval_all.sh \
+  outputs/train_smolvla_libero/checkpoints/070000/pretrained_model outputs/eval_ckpt70k 0,1,2,3
 ```
 
-Outputs per suite:
+Outputs:
 
 ```
-outputs/eval_final/<suite>/eval_info.json                     per-task / per-suite / overall metrics
-outputs/eval_final/<suite>/videos/<suite>/taskXX_epYY_{SUCCESS,FAIL}.mp4   live-view recording of every episode
-outputs/eval_final/eval_info.json                             merged result of the four suites
+outputs/eval_ckpt70k/<suite>/eval_info.json                            per-task / per-suite / overall metrics
+outputs/eval_ckpt70k/<suite>/videos/<suite>/taskXX_epYY_{SUCCESS,FAIL}.mp4   live-view recording of every episode
+outputs/eval_ckpt70k/eval_info.json                                    merged result of the four suites
 ```
 
-### Live-view window
+### 4.2 Live-view window
 
 While an evaluation runs, the script serves the live view at `http://127.0.0.1:8765/`
 (MJPEG stream, no extra dependencies). On a remote machine forward the port
@@ -165,12 +238,23 @@ The terminal prints one line per episode and a summary table per suite:
 [libero_10 task  2/10 ep  1/10] SUCCESS steps 298/520   62.9s  |  task 1/1  suite 1/2  total 1/2/400
 ```
 
-### Live demo (LIBERO-Long, 10 tasks × 1 episode)
+### 4.3 Evaluation seeds
+
+Success rates vary by a few percent across evaluation seeds
+(LeRobot recommends averaging over 3 seeds). Results of the 70k checkpoint:
+
+| Seed | Spatial | Object | Goal | Long | Avg |
+|---|---|---|---|---|---|
+| 1000 (submitted `eval_info.json`) | 91 | 94 | 85 | 65 | 83.8 |
+| 1001 | _(pending)_ | | | | |
+| 1002 | _(pending)_ | | | | |
+
+### 4.4 Live demo (LIBERO-Long, 10 tasks × 1 episode)
 
 ```bash
 python eval_libero_liveview.py \
-  --policy.path=outputs/train_smolvla_libero/checkpoints/100000/pretrained_model \
-  --policy.n_action_steps=1 \
+  --policy.path=outputs/train_smolvla_libero/checkpoints/070000/pretrained_model \
+  --policy.n_action_steps=10 \
   --env.type=libero --env.task=libero_10 \
   --env.observation_height=256 --env.observation_width=256 \
   --eval.n_episodes=1 --eval.batch_size=1 \
@@ -180,9 +264,10 @@ python eval_libero_liveview.py \
 
 ## 5. Submission checklist
 
-- `pretrained_model/` — `outputs/train_smolvla_libero/checkpoints/100000/pretrained_model` (config.json, model.safetensors, processor configs, train_config.json)
-- `eval_info.json` — `outputs/eval_final/eval_info.json` (merged; per-suite files next to it)
-- Live-view recordings — `outputs/eval_final/<suite>/videos/` (400 mp4 files)
+- `pretrained_model/` — `outputs/train_smolvla_libero/checkpoints/070000/pretrained_model`
+  (config.json, model.safetensors, processor configs, train_config.json)
+- `eval_info.json` — `outputs/eval_ckpt70k/eval_info.json` (merged; per-suite files next to it)
+- Live-view recordings — `outputs/eval_ckpt70k/<suite>/videos/` (400 mp4 files)
 - This repository (Dockerfile + README)
 
 ## 6. Notes / troubleshooting
@@ -192,6 +277,12 @@ python eval_libero_liveview.py \
 - **MuJoCo / EGL errors on a headless server**: `export MUJOCO_GL=egl` before running anything.
 - **The evaluation hangs right after start when run with `nohup`**: LIBERO's first-run prompt is waiting
   for input. Run it once interactively and answer `N`, or create `~/.libero/config.yaml` as the Dockerfile does.
-- **Timing**: with `n_action_steps=1` the whole VLA runs at every step (~0.2 s/step on an RTX 6000 Ada).
-  The Long suite (520-step limit) takes ~2–2.5 h for 100 episodes, the other suites ~1 h each.
-- Success rates vary by a few percent between seeds; the paper's protocol (10 episodes/task) is used as is.
+- **Evaluating `lerobot/smolvla_libero` or any checkpoint fine-tuned from `smolvla_base`** needs
+  `--rename_map='{"observation.images.image": "observation.images.camera1", "observation.images.image2": "observation.images.camera2"}'`
+  because those checkpoints expect three cameras named `camera1..3`.
+- **Camera orientation**: LeRobot's `LiberoProcessorStep` rotates both camera images by 180° so that
+  the simulator matches the orientation stored in `lerobot/libero`; do not add another flip
+  (we verified that flipping the wrist camera again drops Spatial from 81 % to ~33 %).
+- **Timing**: with `n_action_steps=10` an episode takes 5–20 s on an RTX 6000 Ada; a full suite
+  (100 episodes) takes 15–25 min, all 400 episodes about 1 h. With `n_action_steps=1` it is ~10× slower.
+- Multi-GPU training: see §3.2.
