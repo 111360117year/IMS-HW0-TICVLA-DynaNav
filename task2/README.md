@@ -30,8 +30,8 @@ Everything we tried and measured is documented below so the gap can be judged fa
 | 90k | 10 | – | – | – | 51 | – |
 | 80k | 10 | 81 | 93 | 85 | 66 | 81.2 |
 | **70k** | 10 | **91** | **94** | 85 | 65 | **83.8** |
-| 60k | 10 | 80 | _(pending)_ | | | |
-| 50k | 10 | 80 | _(pending)_ | | | |
+| 60k | 10 | 80 | 86 | 85 | 68 | 79.8 |
+| 50k | 10 | 80 | 90 | 91 | 61 | 80.5 |
 | `lerobot/smolvla_libero` (official LeRobot checkpoint, for reference) | 10 | 83 | – | – | – | – |
 
 Observations:
