@@ -15,7 +15,7 @@ Submitted checkpoint: **step 70,000** of our own training run (see §3), evaluat
 | LIBERO-Spatial | 90.0 | **91.0** | +1.0 | yes |
 | LIBERO-Object | 96.0 | **94.0** | −2.0 | yes |
 | LIBERO-Goal | 92.0 | 85.0 | −7.0 | no |
-| LIBERO-Long (libero_10) | 71.0 | 65.0 | −6.0 | no |
+| LIBERO-Long (`libero_long`) | 71.0 | 65.0 | −6.0 | no |
 | **Average** | **87.3** | **83.8** | −3.5 | |
 
 Two of the four suites are inside the ±3 pp window; Goal and Long are below it.
@@ -184,6 +184,9 @@ to be enabled through `accelerate` (`--policy.use_amp` is not used by `lerobot-t
 re-implements the rollout loop so that a live-view frame can be composed after every step.
 It is a drop-in replacement for `lerobot-eval` (same CLI options, same `eval_info.json` schema).
 
+Naming: LeRobot's internal id of the LIBERO-Long suite is `libero_10` (the value of `--env.task`); every
+output we produce (folders, logs, `eval_info.json` keys, live view) uses the paper's name `libero_long`.
+
 Protocol: 10 tasks per suite, 10 episodes per task (400 episodes), LIBERO's fixed initial states,
 hard resets, seed 1000, flow matching with 10 steps, `n_action_steps=10`, observations rendered at
 256×256 to match the training data. Step limits are LeRobot's defaults (Spatial/Object 280,
@@ -200,7 +203,7 @@ python eval_libero_liveview.py \
   --env.type=libero --env.task=libero_10 \
   --env.observation_height=256 --env.observation_width=256 \
   --eval.n_episodes=10 --eval.batch_size=1 --seed=1000 \
-  --output_dir=outputs/eval_ckpt70k/libero_10 \
+  --output_dir=outputs/eval_ckpt70k/libero_long \
   --liveview.port=8765
 ```
 
@@ -235,7 +238,7 @@ The same frames are written to the per-episode mp4 files, so the recordings cove
 The terminal prints one line per episode and a summary table per suite:
 
 ```
-[libero_10 task  2/10 ep  1/10] SUCCESS steps 298/520   62.9s  |  task 1/1  suite 1/2  total 1/2/400
+[libero_long task  2/10 ep  1/10] SUCCESS steps 298/520   62.9s  |  task 1/1  suite 1/2  total 1/2/400
 ```
 
 ### 4.3 Evaluation seeds
@@ -258,7 +261,7 @@ python eval_libero_liveview.py \
   --env.type=libero --env.task=libero_10 \
   --env.observation_height=256 --env.observation_width=256 \
   --eval.n_episodes=1 --eval.batch_size=1 \
-  --output_dir=outputs/demo_libero_10 \
+  --output_dir=outputs/demo_libero_long \
   --liveview.port=8765
 ```
 

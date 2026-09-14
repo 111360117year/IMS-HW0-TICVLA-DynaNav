@@ -17,7 +17,7 @@ Example (one suite, 10 tasks x 10 episodes):
       --env.type=libero --env.task=libero_10 \
       --env.observation_height=256 --env.observation_width=256 \
       --eval.n_episodes=10 --eval.batch_size=1 \
-      --output_dir=outputs/eval/libero_10 \
+      --output_dir=outputs/eval/libero_long \
       --liveview.port=8765
 
 All LeRobot CLI options (`--policy.*`, `--env.*`, `--eval.*`, `--seed`) work unchanged.
@@ -312,6 +312,11 @@ class LiveView:
 # --------------------------------------------------------------------------------------
 
 
+# LeRobot's internal id of the long-horizon suite is "libero_10"; the paper and the assignment call it
+# LIBERO-Long. All our outputs (folders, eval_info.json keys, live view) use the paper's name.
+SUITE_DISPLAY = {"libero_10": "libero_long"}
+
+
 def _get_images(observation: dict) -> tuple[np.ndarray, np.ndarray]:
     pixels = observation["pixels"]
     return np.asarray(pixels["image"][0]), np.asarray(pixels["image2"][0])
@@ -376,7 +381,9 @@ def _agg(xs: list[float]) -> float:
 
 def evaluate(cfg: LiveEvalConfig, envs, policy, env_pre, env_post, pre, post, view: LiveView) -> dict:
     out_json = Path(cfg.output_dir) / "eval_info.json"
-    tasks = [(suite, tid, venv) for suite, group in envs.items() for tid, venv in group.items()]
+    tasks = [
+        (SUITE_DISPLAY.get(suite, suite), tid, venv) for suite, group in envs.items() for tid, venv in group.items()
+    ]
     n_ep = cfg.eval.n_episodes
     total_planned = len(tasks) * n_ep
 
@@ -498,6 +505,7 @@ def _write_info(path: Path, cfg, per_task_infos, group_acc, overall, start_t, co
             "policy_type": cfg.policy.type,
             "n_action_steps": getattr(cfg.policy, "n_action_steps", None),
             "env_task": cfg.env.task,
+            "suite_names": {k: SUITE_DISPLAY.get(k, k) for k in str(cfg.env.task).split(",")},
             "n_episodes_per_task": cfg.eval.n_episodes,
             "seed": cfg.seed,
             "observation_size": [cfg.env.observation_height, cfg.env.observation_width],

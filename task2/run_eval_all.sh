@@ -23,11 +23,12 @@ SEED=${SEED:-1000}                     # evaluation seed (LeRobot default 1000)
 PORT_BASE=${PORT_BASE:-8765}
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SUITES=(libero_spatial libero_object libero_goal libero_10)
+SUITES=(libero_spatial libero_object libero_goal libero_10)    # LeRobot env ids
+NAMES=(libero_spatial libero_object libero_goal libero_long)   # names of our output folders / logs
 IFS=',' read -r -a GPU_ARR <<< "$GPUS"
 mkdir -p "$OUT"
 
-run_suite() {  # suite gpu port
+run_suite() {  # env_id gpu port name
   CUDA_VISIBLE_DEVICES="$2" python -u "$HERE/eval_libero_liveview.py" \
     --policy.path="$CKPT" \
     --policy.n_action_steps="$N_ACTION_STEPS" \
@@ -35,29 +36,29 @@ run_suite() {  # suite gpu port
     --env.observation_height=256 --env.observation_width=256 \
     --eval.n_episodes="$N_EPISODES" --eval.batch_size=1 \
     --seed="$SEED" \
-    --output_dir="$OUT/$1" \
+    --output_dir="$OUT/$4" \
     --liveview.port="$3" \
-    > "$OUT/$1.log" 2>&1
+    > "$OUT/$4.log" 2>&1
 }
 
 if [ "${#GPU_ARR[@]}" -ge 4 ]; then
   echo "Running the four suites in parallel on GPUs ${GPUS} (live views on ports ${PORT_BASE}..$((PORT_BASE+3)))"
   pids=()
   for i in "${!SUITES[@]}"; do
-    run_suite "${SUITES[$i]}" "${GPU_ARR[$i]}" $((PORT_BASE + i)) &
+    run_suite "${SUITES[$i]}" "${GPU_ARR[$i]}" $((PORT_BASE + i)) "${NAMES[$i]}" &
     pids+=($!)
-    echo "  ${SUITES[$i]} -> GPU ${GPU_ARR[$i]}, port $((PORT_BASE + i)), pid ${pids[-1]}, log $OUT/${SUITES[$i]}.log"
+    echo "  ${NAMES[$i]} -> GPU ${GPU_ARR[$i]}, port $((PORT_BASE + i)), pid ${pids[-1]}, log $OUT/${NAMES[$i]}.log"
   done
   for p in "${pids[@]}"; do wait "$p"; done
 else
   echo "Running the four suites sequentially on GPU ${GPU_ARR[0]} (live view on port ${PORT_BASE})"
-  for s in "${SUITES[@]}"; do
-    echo "  $s ... (log $OUT/$s.log)"
-    run_suite "$s" "${GPU_ARR[0]}" "$PORT_BASE"
+  for i in "${!SUITES[@]}"; do
+    echo "  ${NAMES[$i]} ... (log $OUT/${NAMES[$i]}.log)"
+    run_suite "${SUITES[$i]}" "${GPU_ARR[0]}" "$PORT_BASE" "${NAMES[$i]}"
   done
 fi
 
 python "$HERE/merge_eval_info.py" --out "$OUT/eval_info.json" \
   "$OUT/libero_spatial/eval_info.json" "$OUT/libero_object/eval_info.json" \
-  "$OUT/libero_goal/eval_info.json" "$OUT/libero_10/eval_info.json"
+  "$OUT/libero_goal/eval_info.json" "$OUT/libero_long/eval_info.json"
 echo "Done. Merged results: $OUT/eval_info.json ; videos under $OUT/<suite>/videos/"

@@ -4,7 +4,7 @@
 Usage:
   python merge_eval_info.py --out eval_info.json outputs/eval/libero_spatial/eval_info.json \
       outputs/eval/libero_object/eval_info.json outputs/eval/libero_goal/eval_info.json \
-      outputs/eval/libero_10/eval_info.json
+      outputs/eval/libero_long/eval_info.json
 
 Prints the per-suite table with the SmolVLA paper targets (+/- 3 pp) next to it.
 """
@@ -13,7 +13,7 @@ import argparse
 import json
 from pathlib import Path
 
-PAPER = {"libero_spatial": 90.0, "libero_object": 96.0, "libero_goal": 92.0, "libero_10": 71.0}
+PAPER = {"libero_spatial": 90.0, "libero_object": 96.0, "libero_goal": 92.0, "libero_long": 71.0, "libero_10": 71.0}
 
 
 def main() -> None:
