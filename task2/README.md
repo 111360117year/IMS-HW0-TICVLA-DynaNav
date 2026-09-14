@@ -38,8 +38,7 @@ Observations:
 
 - The success rate of a 100-episode suite has a standard deviation of roughly 4 pp
   (binomial noise plus sensitivity to the initial states), so differences of a few
-  points between checkpoints are largely noise. Additional evaluation seeds for the
-  70k checkpoint are reported in §4.3.
+  points between checkpoints are largely noise (see §4.3).
 - Checkpoints after 70k get *worse* on Long (66 → 51 → 58). With LeRobot's default
   scheduler the learning rate reaches its floor (2.5e-6) at step 30k and stays there for the
   remaining 70k steps, which lets the policy slowly overfit. A second run with the cosine decay
@@ -241,16 +240,14 @@ The terminal prints one line per episode and a summary table per suite:
 [libero_long task  2/10 ep  1/10] SUCCESS steps 298/520   62.9s  |  task 1/1  suite 1/2  total 1/2/400
 ```
 
-### 4.3 Evaluation seeds
+### 4.3 Evaluation noise
 
-Success rates vary by a few percent across evaluation seeds
-(LeRobot recommends averaging over 3 seeds). Results of the 70k checkpoint:
-
-| Seed | Spatial | Object | Goal | Long | Avg |
-|---|---|---|---|---|---|
-| 1000 (submitted `eval_info.json`) | 91 | 94 | 85 | 65 | 83.8 |
-| 1001 | _(pending)_ | | | | |
-| 1002 | _(pending)_ | | | | |
+All numbers in this README come from a single evaluation seed (1000, LeRobot's default) with
+10 episodes per task. The success rate of a 100-episode suite therefore carries a standard deviation of
+roughly 4 pp (binomial noise plus sensitivity to the sampled initial states); e.g. the same 70k
+checkpoint scores 91 on Spatial while the neighbouring checkpoints score 80–82. Differences of a few
+points between checkpoints or seeds should not be over-interpreted. `run_eval_all.sh` accepts
+`SEED=<n>` to repeat the protocol with another seed.
 
 ### 4.4 Live demo (LIBERO-Long, 10 tasks × 1 episode)
 
