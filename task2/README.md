@@ -262,13 +262,17 @@ python eval_libero_liveview.py \
   --liveview.port=8765
 ```
 
-## 5. Submission checklist
+## 5. Submission
 
-- `pretrained_model/` — `outputs/train_smolvla_libero/checkpoints/070000/pretrained_model`
-  (config.json, model.safetensors, processor configs, train_config.json)
-- `eval_info.json` — `outputs/eval_ckpt70k/eval_info.json` (merged; per-suite files next to it)
-- Live-view recordings — `outputs/eval_ckpt70k/<suite>/videos/` (400 mp4 files)
-- This repository (Dockerfile + README)
+| Item | Where |
+|---|---|
+| `pretrained_model/` (checkpoint 70k: config.json, model.safetensors, processor configs, train_config.json) | https://huggingface.co/kuneo/ims-hw0-smolvla-libero |
+| `eval_info.json` (merged result of the four suites, 400 episodes) | same model repo, root |
+| Live-view recordings of all 400 evaluation episodes (`videos/<suite>/taskXX_epYY_{SUCCESS,FAIL}.mp4`) | https://huggingface.co/datasets/kuneo/ims-hw0-smolvla-libero-videos |
+| Code, Dockerfile, README | this repository (`task2/`) |
+
+Local paths on the training machine: `outputs/train_smolvla_libero/checkpoints/070000/pretrained_model`,
+`outputs/eval_ckpt70k/eval_info.json`, `outputs/eval_ckpt70k/<suite>/videos/`.
 
 ## 6. Notes / troubleshooting
 
