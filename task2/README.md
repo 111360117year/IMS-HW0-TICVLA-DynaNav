@@ -42,38 +42,44 @@
 
 ## 評估結果
 
-繳交的 checkpoint 為訓練第 70,000 步，評估設定：seed 1000、每任務 10 集、`n_action_steps=10`。
+繳交的 checkpoint 為第二次訓練（v2）的第 90,000 步，評估設定：seed 1000、每任務 10 集、`n_action_steps=10`。
 
 | 套件 | 論文 | 本專案 | 差距 | ±3 pp 內 |
 |---|---|---|---|---|
-| LIBERO-Spatial | 90.0 | **91.0** | +1.0 | ✅ |
-| LIBERO-Object | 96.0 | **94.0** | −2.0 | ✅ |
-| LIBERO-Goal | 92.0 | 85.0 | −7.0 | ❌ |
-| LIBERO-Long | 71.0 | 65.0 | −6.0 | ❌ |
-| **平均** | **87.3** | **83.8** | −3.5 | |
+| LIBERO-Spatial | 90.0 | 86.0 | −4.0 | ❌ |
+| LIBERO-Object | 96.0 | **98.0** | +2.0 | ✅ |
+| LIBERO-Goal | 92.0 | **95.0** | +3.0 | ✅ |
+| LIBERO-Long | 71.0 | **71.0** | 0.0 | ✅ |
+| **平均** | **87.3** | **87.5** | +0.2 | |
 
-### 各 checkpoint 的成績
+### 兩次訓練與各 checkpoint 的成績
 
-同一次訓練的六個 checkpoint 以相同協議評估，繳交平均最高的 70k。
+本專案共訓練兩次，所有 checkpoint 皆以相同協議評估：
 
-| Checkpoint | Spatial | Object | Goal | Long | 平均 |
-|---|---|---|---|---|---|
-| 50k | 80 | 90 | 91 | 61 | 80.5 |
-| 60k | 80 | 86 | 85 | 68 | 79.8 |
-| **70k** | **91** | **94** | 85 | 65 | **83.8** |
-| 80k | 81 | 93 | 85 | 66 | 81.2 |
-| 100k | 82 | 89 | 87 | 58 | 79.0 |
+- **v1**：LeRobot 官方 LIBERO 配方原樣執行。其學習率排程預設於第 30,000 步即衰減至最低值，其後 70,000 步幾乎不再學習，成績在 70k 達到高點後下降。
+- **v2（繳交）**：唯一的改動是把餘弦衰減拉長到整個訓練（`--policy.scheduler_decay_steps=100000`），其餘配方相同。四個套件平均提升約 4 個百分點，Long 由 65 提升至 71。
 
-100k 的評估使用 `n_action_steps=1`，其餘為 10；兩種設定在 Spatial 上的成績相同（82 對 81）。
+| 訓練 | Checkpoint | Spatial | Object | Goal | Long | 平均 |
+|---|---|---|---|---|---|---|
+| v1 | 50k | 80 | 90 | 91 | 61 | 80.5 |
+| v1 | 60k | 80 | 86 | 85 | 68 | 79.8 |
+| v1 | 70k | 91 | 94 | 85 | 65 | 83.8 |
+| v1 | 80k | 81 | 93 | 85 | 66 | 81.2 |
+| v1 | 100k | 82 | 89 | 87 | 58 | 79.0 |
+| v2 | 70k | 85 | 94 | 89 | 76 | 86.0 |
+| v2 | 80k | 88 | 96 | 96 | 78 | 89.5 |
+| **v2** | **90k** | 86 | **98** | **95** | **71** | **87.5** |
+| v2 | 100k | 86 | 91 | 94 | 70 | 85.2 |
 
-### 與論文差距的說明
+v1 100k 的評估使用 `n_action_steps=1`，其餘為 10；兩種設定在 Spatial 上的成績相同（82 對 81）。
 
-1. LeRobot 官方釋出的 LIBERO checkpoint `lerobot/smolvla_libero` 以本專案相同的評估程式跑 Spatial 為 **83%**，與本專案模型同一水準。
-2. LeRobot 的 GitHub issue [#3287](https://github.com/huggingface/lerobot/issues/3287)、[#2354](https://github.com/huggingface/lerobot/issues/2354)、[#1369](https://github.com/huggingface/lerobot/issues/1369)、[#4614](https://github.com/huggingface/lerobot/issues/4614) 均回報以公開配方無法達到論文分數；#3287 以相同配方得到 83 / 70 / 70 / 44.8。
-3. 每套件 100 集的成功率標準差約 4 個百分點，checkpoint 之間數分的差異多屬評估雜訊。
-4. LeRobot 的 SmolVLA 預設在第 30,000 步即將學習率衰減至最低值，其後 70,000 步幾乎不再學習，70k 之後的 checkpoint 成績下降。
+### 與論文的比較
 
-**運算資源紀錄**：訓練於 RTX 6000 Ada 單卡，fp32，每步 0.76 秒，100,000 步共 22.5 小時，VRAM 約 14 GB，最終 loss 0.069。評估每集 5–20 秒，一個套件 100 集約 15–25 分鐘。
+v2 90k 的四套件平均 87.5 與論文的 87.3 相當，Object、Goal、Long 三個套件在 ±3 個百分點內，Spatial 低 4 個百分點。每套件 100 集的成功率標準差約 4 個百分點，1 個百分點即為 1 集。
+
+以公開配方復現論文分數在社群中被廣泛回報為困難：LeRobot 官方釋出的 LIBERO checkpoint `lerobot/smolvla_libero` 以本專案相同的評估程式跑 Spatial 為 83%；GitHub issue [#3287](https://github.com/huggingface/lerobot/issues/3287)、[#2354](https://github.com/huggingface/lerobot/issues/2354)、[#1369](https://github.com/huggingface/lerobot/issues/1369)、[#4614](https://github.com/huggingface/lerobot/issues/4614) 以相同配方得到的成績均低於論文（如 #3287 的 83 / 70 / 70 / 44.8）。
+
+**運算資源紀錄**：v1 於 RTX 6000 Ada 單卡、fp32，每步 0.76 秒，100,000 步共 22.5 小時，VRAM 約 14 GB；v2 於兩張 RTX 6000 Ada、bf16，每步 0.39 秒，100,000 步約 11 小時，每卡 VRAM 約 8 GB。評估每集 5–20 秒，一個套件 100 集約 15–25 分鐘。
 
 ## Live view 視窗
 
@@ -94,7 +100,7 @@
 
 | 項目 | 位置 |
 |---|---|
-| `pretrained_model/`（checkpoint 70k：config.json、model.safetensors、processor 設定、train_config.json） | [Hugging Face 模型 repo](https://huggingface.co/kuneo/ims-hw0-smolvla-libero) |
+| `pretrained_model/`（v2 checkpoint 90k：config.json、model.safetensors、processor 設定、train_config.json） | [Hugging Face 模型 repo](https://huggingface.co/kuneo/ims-hw0-smolvla-libero) |
 | `eval_info.json`（四套件合併，400 集） | 同上，根目錄 |
 | 400 集 live view 錄影（`videos/<suite>/taskXX_epYY_{SUCCESS,FAIL}.mp4`） | [Hugging Face 影片 repo](https://huggingface.co/datasets/kuneo/ims-hw0-smolvla-libero-videos) |
 | 程式碼、Dockerfile、README | 本 repo `task2/` |
@@ -145,28 +151,31 @@ LIBERO 第一次匯入會詢問 `Do you want to specify a custom path for the da
 
 ## 訓練
 
-依 LeRobot 官方 LIBERO 文件的 SmolVLA 配方：僅以 VLM 初始化、凍結 VLM 只訓練動作專家、chunk size 50、影像縮放至 512×512、AdamW（β 0.9 / 0.95）、學習率 1e-4 餘弦衰減至 2.5e-6，**100,000 步、batch size 64**，每 10,000 步存一個 checkpoint。
+依 LeRobot 官方 LIBERO 文件的 SmolVLA 配方：僅以 VLM 初始化、凍結 VLM 只訓練動作專家、chunk size 50、影像縮放至 512×512、AdamW（β 0.9 / 0.95）、學習率 1e-4 餘弦衰減至 2.5e-6，**100,000 步、有效 batch size 64**，每 10,000 步存一個 checkpoint。繳交的 v2 將餘弦衰減設定為橫跨全部 100,000 步（`--policy.scheduler_decay_steps=100000`），並以兩張 GPU、bf16 混合精度訓練（每卡 batch 32）。
 
 ```bash
-lerobot-train \
+NCCL_P2P_DISABLE=1 NCCL_IB_DISABLE=1 CUDA_VISIBLE_DEVICES=0,1 \
+accelerate launch --multi_gpu --num_processes=2 --mixed_precision=bf16 $(which lerobot-train) \
   --policy.type=smolvla \
   --policy.load_vlm_weights=true \
   --policy.push_to_hub=false \
+  --policy.scheduler_decay_steps=100000 \
   --dataset.repo_id=lerobot/libero \
   --dataset.revision=a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4 \
   --dataset.video_backend=pyav \
-  --output_dir=outputs/train_smolvla_libero \
+  --output_dir=outputs/train_smolvla_libero_v2 \
   --steps=100000 \
-  --batch_size=64 \
+  --batch_size=32 \
   --save_freq=10000 \
   --policy.device=cuda \
   --wandb.enable=false
 ```
 
-Checkpoint 位於 `outputs/train_smolvla_libero/checkpoints/<step>/pretrained_model`。中斷後續跑：
+單卡執行時改為 `lerobot-train ... --batch_size=64`，其餘參數相同（v1 即以此方式訓練，但未加 `--policy.scheduler_decay_steps`）。Checkpoint 位於 `outputs/train_smolvla_libero_v2/checkpoints/<step>/pretrained_model`。中斷後續跑：
 
 ```bash
-lerobot-train --config_path=outputs/train_smolvla_libero/checkpoints/last/pretrained_model/train_config.json --resume=true
+accelerate launch --multi_gpu --num_processes=2 --mixed_precision=bf16 $(which lerobot-train) \
+  --config_path=outputs/train_smolvla_libero_v2/checkpoints/last/pretrained_model/train_config.json --resume=true
 ```
 
 ## 執行評估
@@ -179,12 +188,12 @@ LeRobot 內部以 `libero_10` 代表 LIBERO-Long，`--env.task` 須填 `libero_1
 
 ```bash
 python eval_libero_liveview.py \
-  --policy.path=outputs/train_smolvla_libero/checkpoints/070000/pretrained_model \
+  --policy.path=outputs/train_smolvla_libero_v2/checkpoints/090000/pretrained_model \
   --policy.n_action_steps=10 \
   --env.type=libero --env.task=libero_10 \
   --env.observation_height=256 --env.observation_width=256 \
   --eval.n_episodes=10 --eval.batch_size=1 --seed=1000 \
-  --output_dir=outputs/eval_ckpt70k/libero_long \
+  --output_dir=outputs/eval_v2_ckpt90k/libero_long \
   --liveview.port=8765
 ```
 
@@ -192,22 +201,22 @@ python eval_libero_liveview.py \
 
 ```bash
 N_ACTION_STEPS=10 SEED=1000 ./run_eval_all.sh \
-  outputs/train_smolvla_libero/checkpoints/070000/pretrained_model outputs/eval_ckpt70k 0,1,2,3
+  outputs/train_smolvla_libero_v2/checkpoints/090000/pretrained_model outputs/eval_v2_ckpt90k 0,1,2,3
 ```
 
 最後一個參數為 GPU 編號：給一張卡則四個套件依序執行，給四張卡則平行執行。輸出：
 
 ```
-outputs/eval_ckpt70k/<suite>/eval_info.json                         各套件結果
-outputs/eval_ckpt70k/<suite>/videos/<suite>/taskXX_epYY_{SUCCESS,FAIL}.mp4   每集 live view 錄影
-outputs/eval_ckpt70k/eval_info.json                                 四套件合併結果
+outputs/eval_v2_ckpt90k/<suite>/eval_info.json                         各套件結果
+outputs/eval_v2_ckpt90k/<suite>/videos/<suite>/taskXX_epYY_{SUCCESS,FAIL}.mp4   每集 live view 錄影
+outputs/eval_v2_ckpt90k/eval_info.json                                 四套件合併結果
 ```
 
 ### Live demo（LIBERO-Long 10 個任務 × 1 集）
 
 ```bash
 python eval_libero_liveview.py \
-  --policy.path=outputs/train_smolvla_libero/checkpoints/070000/pretrained_model \
+  --policy.path=outputs/train_smolvla_libero_v2/checkpoints/090000/pretrained_model \
   --policy.n_action_steps=10 \
   --env.type=libero --env.task=libero_10 \
   --env.observation_height=256 --env.observation_width=256 \
