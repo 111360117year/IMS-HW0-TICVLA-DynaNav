@@ -9,7 +9,7 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.10.0+cu128-EE4C2C)]()
 [![Course](https://img.shields.io/badge/NTUST%20GIMT-IMS%202026-blue)]()
 
-![Live view — LIBERO evaluation](docs/liveview.png)
+![Demo — LIBERO-Long, turn on the stove and put the moka pot on it (success)](docs/demo.gif)
 
 </div>
 
@@ -17,24 +17,33 @@
 
 ## 📋 目錄
 
-- [專案概述](#專案概述)
-- [評估結果](#評估結果)
-- [Live view 視窗](#live-view-視窗)
-- [繳交物](#繳交物)
-- [系統需求](#系統需求)
-- [安裝步驟](#安裝步驟)
-- [資料集](#資料集)
-- [訓練](#訓練)
-- [執行評估](#執行評估)
-- [注意事項](#注意事項)
-- [Repo 結構](#repo-結構)
-- [參考與致謝](#參考與致謝)
+- [SmolVLA Reproduction on LIBERO with LeRobot](#smolvla-reproduction-on-libero-with-lerobot)
+  - [📋 目錄](#-目錄)
+  - [專案概述](#專案概述)
+  - [評估結果](#評估結果)
+    - [兩次訓練與各 checkpoint 的成績](#兩次訓練與各-checkpoint-的成績)
+    - [與論文的比較](#與論文的比較)
+  - [Live view 視窗](#live-view-視窗)
+  - [繳交物](#繳交物)
+  - [系統需求](#系統需求)
+  - [安裝步驟](#安裝步驟)
+    - [方法 A：Docker](#方法-adocker)
+    - [方法 B：Conda](#方法-bconda)
+  - [資料集](#資料集)
+  - [訓練](#訓練)
+  - [執行評估](#執行評估)
+    - [單一套件](#單一套件)
+    - [四套件全部（400 集）並合併結果](#四套件全部400-集並合併結果)
+    - [Live demo（LIBERO-Long 10 個任務 × 1 集）](#live-demolibero-long-10-個任務--1-集)
+  - [注意事項](#注意事項)
+  - [Repo 結構](#repo-結構)
+  - [參考與致謝](#參考與致謝)
 
 ---
 
 ## 專案概述
 
-本專案為 NTUST GIMT「Intelligent Manufacturing Systems」課程 HW0 Task 2 的實作：以 [LeRobot](https://github.com/huggingface/lerobot) 官方流程訓練 [SmolVLA](https://arxiv.org/abs/2506.01844)（0.45B）於 LIBERO 資料集，並在 **LIBERO-Spatial / Object / Goal / Long** 四個套件上以「每套件 10 個任務 × 每任務 10 集」共 400 集進行評估，與論文 Table 2 的成績比較。
+本專案為 NTUST「Intelligent Manufacturing Systems」課程 HW0 Task 2 的實作：以 [LeRobot](https://github.com/huggingface/lerobot) 官方流程訓練 [SmolVLA](https://arxiv.org/abs/2506.01844)（0.45B）於 LIBERO 資料集，並在 **LIBERO-Spatial / Object / Goal / Long** 四個套件上以「每套件 10 個任務 × 每任務 10 集」共 400 集進行評估，與論文 Table 2 的成績比較。
 
 **模型**：SmolVLM2-500M 視覺語言骨幹（取前 16 層、凍結）＋ 從零訓練的約 1 億參數動作專家，總參數 450,046,176。僅以 VLM 權重初始化，未使用任何 SmolVLA 預訓練 checkpoint，與論文 LIBERO 實驗的設定相同。
 
@@ -83,7 +92,7 @@ v2 90k 的四套件平均 87.5 與論文的 87.3 相當，Object、Goal、Long �
 
 ## Live view 視窗
 
-`eval_libero_liveview.py` 在評估時即時顯示（見上方截圖）：
+`eval_libero_liveview.py` 在評估時即時顯示（見上方動圖）：
 
 - 前視相機（agentview）與腕部相機（eye-in-hand）
 - 任務套件、任務名稱與語言指令
@@ -245,7 +254,7 @@ task2/
 ├── run_eval_all.sh           # 四套件評估與合併
 ├── merge_eval_info.py        # 合併各套件 eval_info.json 並與論文對照
 ├── Dockerfile                # CUDA 12.8 + PyTorch 2.10 + LeRobot 0.4.4 + LIBERO
-├── docs/liveview.png         # live view 截圖
+├── docs/demo.gif             # live view 示範（LIBERO-Long 成功集）
 └── README.md
 ```
 
